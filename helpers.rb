@@ -45,7 +45,7 @@ def construct_details_string(item,channel = "TEXT")
   if item[:url]
     tinyurl = shorten_url(URI.unescape(item[:url]))
     if channel == "VOICE"
-      details << "Official web page: #{readable_tinyurl(tinyurl)}. Again, that's #{readable_tinyurl(tinyurl)}"
+      details << "Official web page: #{readable_tinyurl(tinyurl)}"
     else
       details << "Official web page: #{tinyurl}"
     end
@@ -78,5 +78,6 @@ end
 
 def readable_tinyurl(url)
   unique_url = url.split("/")[1].split(//).join(",")+","
-  "tiny u r l dot com slash #{unique_url}"
+  readable_url = "tiny u r l dot com slash #{unique_url}"
+  "#{readable_url} , again, that is , #{readable_url}"
 end

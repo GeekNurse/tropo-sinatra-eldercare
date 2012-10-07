@@ -38,18 +38,19 @@
  #  :"@diffgr:id"=>"Table14",
  #  :"@msdata:row_order"=>"3"},
 
-def construct_details_string(item)
+
+def construct_details_string(item,channel = "TEXT")
   details = []
   details << "This is detailed information about #{item[:tab_name]} at #{item[:tab_name]}: "
   if item[:url]
     tinyurl = shorten_url(URI.unescape(item[:url]))
-    if session[:channel] == "VOICE"
+    if channel == "VOICE"
       details << "Official web page: #{readable_tinyurl(tinyurl)}. Again, that's #{readable_tinyurl(tinyurl)}"
     else
       details << "Official web page: #{tinyurl}"
     end
   end
-  details << "Phone number for information: item[:info_phone]" unless item[:info_phone].empty?
+  details << "Phone number for information: #{item[:info_phone]}" unless item[:info_phone].empty?
   details << "Email address: #{item[:e_mail_add]}" unless item[:e_mail_add].empty?
 
   full_address = []
@@ -61,7 +62,7 @@ def construct_details_string(item)
   full_address_str = full_address.join(",")
 
   google_maps_url = shorten_url("http://maps.google.com/maps?f=q&source=s_q&hl=en&geocode=&q="+URI.escape(full_address_str))
-  if session[:channel] == "VOICE"
+  if channel == "VOICE"
     details << "This resource is located at: #{full_address.join(" ,, ")}"
     details << "Google map available at #{readable_tinyurl(google_maps_url)}"
   else

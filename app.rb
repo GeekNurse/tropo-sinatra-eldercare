@@ -20,8 +20,8 @@ post '/index.json' do
   # into Sinatra/HTTP sessions; this can then be used in the subsequent calls to the
   # Sinatra application
   session[:from] = v[:session][:from]
-  session[:network] = v[:session][:to][:network]
-  session[:channel] = v[:session][:to][:channel]
+  session[:network] = v[:session][:to][:network].upcase
+  session[:channel] = v[:session][:to][:channel].upcase
 
   # Set up connections to eldercare.gov API
   session[:client] = Savon.client(settings.eldercare_gov_api["wsdl_url"])
@@ -113,8 +113,13 @@ post '/process_selection.json' do
     # If we have a valid response from the last ask, do this section
     if v[:result][:actions][:selection][:value]
       item = session[:data][v[:result][:actions][:selection][:value].to_i-1]
-      session[:say_string] = construct_details_string(item)
-      t.say session[:say_string]
+      session[:say_string_VOICE] = construct_details_string(item,"VOICE")
+      session[:say_string_TEXT] = construct_details_string(item,"TEXT")
+      if session[:channel] == "VOICE"
+        t.say session[:say_string_VOICE]
+      else
+        t.say session[:say_string_TEXT]
+      end
 
       # Ask the user if they would like an SMS sent to them
       t.ask :name => 'send_sms', :bargein => true, :timeout => 60, :attempts => 1,
@@ -144,8 +149,9 @@ post '/send_text_message.json' do
       t.message({
         :to => v[:result][:actions][:number_to_text][:value],
         :network => "SMS",
-        :say => {:value => session[:say_string]}})
-      t.say "Message sent."
+        :say => {:value => session[:say_string_TEXT]
+      }})
+      t.say "Your text message is on its way."
     else # We dont have a number, so either ask for it if they selected to send a text message, or send to goodbye.json
       if v[:result][:actions][:send_sms][:value] == "true"
         t.ask :name => 'number_to_text', :bargein => true, :timeout => 60, :required => false, :attempts => 2,

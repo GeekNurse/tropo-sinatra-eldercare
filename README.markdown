@@ -47,13 +47,7 @@ Steps to recreate
     * `cd tropo-sinatra-eldercare`
 
 
-3. Create a `config.yml` file with the following contents:
-    ```yaml
-    eldercare_gov_api:
-      wsdl_url: "http://www.eldercare.gov/Eldercare.NET/WebServices/EldercareData/ec_search.asmx?wsdl"
-      username: "YOUR_USERNAME"
-      password: "YOUR_PASSWORD"
-    ```
+3. Edit the `config.yml.exmaple` to use your own API username and password and rename the file to `config.yml`
 
 4. Back at the command line, issue:
     * `heroku create`

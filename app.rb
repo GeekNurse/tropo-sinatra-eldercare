@@ -119,7 +119,7 @@ post '/process_selection.json' do
       session[:say_string_VOICE] = construct_details_string(item,"VOICE")
       session[:say_string_TEXT] = construct_details_string(item,"TEXT")
       if session[:channel] == "VOICE"
-        t.say say_str(session[:say_string_VOICE], "-15%")
+        t.say say_str(session[:say_string_VOICE], "-10%")
       else
         t.say session[:say_string_TEXT]
       end

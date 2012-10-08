@@ -53,7 +53,7 @@ def construct_details_string(item,channel = "TEXT")
       details << "Official web page: #{tinyurl}"
     end
   end
-  details << "Phone number for information: #{item[:info_phone]}" unless item[:info_phone].empty?
+  details << "Phone number for information: <say-as interpret-as='vxml:phone'>#{item[:info_phone]}</say-as>" unless item[:info_phone].empty?
   details << "Email address: #{item[:e_mail_add]}" unless item[:e_mail_add].empty?
 
   full_address = []
@@ -61,8 +61,12 @@ def construct_details_string(item,channel = "TEXT")
   full_address << item[:address2] unless item[:address2].empty?
   full_address << item[:city] unless item[:city].empty?
   full_address << item[:state_code] unless item[:state_code].empty?
-  full_address << item[:zip_code] unless item[:zip_code].empty?
-  full_address_str = full_address.join(",")
+  if channel == "VOICE"
+    full_address << "<say-as interpret-as='vxml:digits'>#{item[:zip_code]}</item>" unless item[:zip_code].empty?
+  else
+    full_address << item[:zip_code] unless item[:zip_code].empty?
+  end
+  full_address_str = full_address.join(" ,")
 
   google_maps_url = shorten_url("http://maps.google.com/maps?f=q&source=s_q&hl=en&geocode=&q="+URI.escape(full_address_str))
   if channel == "VOICE"
@@ -72,7 +76,7 @@ def construct_details_string(item,channel = "TEXT")
     details << "Address: #{full_address_str}"
     details << "Google map available at #{google_maps_url}"
   end
-  return details.join(", <break/> ")
+  return details.join(" , <break/> ")
 end
 
 def shorten_url(long_url)

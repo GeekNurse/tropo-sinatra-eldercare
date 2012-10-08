@@ -62,7 +62,7 @@ def construct_details_string(item,channel = "TEXT")
   full_address << item[:city] unless item[:city].nil?
   full_address << item[:state_code] unless item[:state_code].nil?
   if channel == "VOICE"
-    full_address << "<say-as interpret-as='vxml:digits'>#{item[:zip_code]}</item>" unless item[:zip_code].nil?
+    full_address << "<say-as interpret-as='vxml:digits'>#{item[:zip_code]}</say-as>" unless item[:zip_code].nil?
   else
     full_address << item[:zip_code] unless item[:zip_code].nil?
   end
@@ -76,7 +76,12 @@ def construct_details_string(item,channel = "TEXT")
     details << "Address: #{full_address_str}"
     details << "Google map available at #{google_maps_url}"
   end
-  return details.join(" , <break/> ")
+  if channel == "VOICE"
+    details = details.join(" , <break/> ")
+  else
+    details = details.join(" | ")
+  end
+  details
 end
 
 def shorten_url(long_url)

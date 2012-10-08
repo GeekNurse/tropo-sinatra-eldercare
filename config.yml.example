@@ -2,3 +2,6 @@ eldercare_gov_api:
   wsdl_url: "http://www.eldercare.gov/Eldercare.NET/WebServices/EldercareData/ec_search.asmx?wsdl"
   username: "YOUR_USERNAME"
   password: "YOUR_PASSWORD"
+tropo_tts:
+  voice: "kate"
+  rate: "default"

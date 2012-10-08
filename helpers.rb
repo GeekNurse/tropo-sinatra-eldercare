@@ -38,6 +38,9 @@
  #  :"@diffgr:id"=>"Table14",
  #  :"@msdata:row_order"=>"3"},
 
+def say_str(string_to_say, rate = settings.tropo_tts["rate"])
+  "<speak><prosody rate='#{rate}'>#{string_to_say}</prosody></speak>"
+end
 
 def construct_details_string(item,channel = "TEXT")
   details = []
@@ -69,7 +72,7 @@ def construct_details_string(item,channel = "TEXT")
     details << "Address: #{full_address_str}"
     details << "Google map available at #{google_maps_url}"
   end
-  return details.join(", ")
+  return details.join(", <break/> ")
 end
 
 def shorten_url(long_url)

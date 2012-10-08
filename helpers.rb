@@ -53,18 +53,18 @@ def construct_details_string(item,channel = "TEXT")
       details << "Official web page: #{tinyurl}"
     end
   end
-  details << "Phone number for information: <say-as interpret-as='vxml:phone'>#{item[:info_phone]}</say-as>" unless item[:info_phone].empty?
-  details << "Email address: #{item[:e_mail_add]}" unless item[:e_mail_add].empty?
+  details << "Phone number for information: <say-as interpret-as='vxml:phone'>#{item[:info_phone]}</say-as>" unless item[:info_phone].nil?
+  details << "Email address: #{item[:e_mail_add]}" unless item[:e_mail_add].nil?
 
   full_address = []
-  full_address << item[:address1] unless item[:address1].empty?
-  full_address << item[:address2] unless item[:address2].empty?
-  full_address << item[:city] unless item[:city].empty?
-  full_address << item[:state_code] unless item[:state_code].empty?
+  full_address << item[:address1] unless item[:address1].nil?
+  full_address << item[:address2] unless item[:address2].nil?
+  full_address << item[:city] unless item[:city].nil?
+  full_address << item[:state_code] unless item[:state_code].nil?
   if channel == "VOICE"
-    full_address << "<say-as interpret-as='vxml:digits'>#{item[:zip_code]}</item>" unless item[:zip_code].empty?
+    full_address << "<say-as interpret-as='vxml:digits'>#{item[:zip_code]}</item>" unless item[:zip_code].nil?
   else
-    full_address << item[:zip_code] unless item[:zip_code].empty?
+    full_address << item[:zip_code] unless item[:zip_code].nil?
   end
   full_address_str = full_address.join(" ,")
 

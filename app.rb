@@ -3,6 +3,8 @@ require 'bundler'
 require 'open-uri'
 Bundler.require
 
+require 'pp'
+
 # Load configuration file with Sintra::Contrib helper (http://www.sinatrarb.com/contrib/)
 config_file 'config.yml'
 # Load some helper methods from helpers.rb
@@ -39,17 +41,16 @@ post '/index.json' do
   # Create a Tropo::Generator object which is used to build the resulting JSON response
   t = Tropo::Generator.new
     t.voice = settings.tropo_tts["voice"]
-    # If there is Initial Text available, we know this is an IM/SMS/Twitter session and not voice
+
+    # # If there is Initial Text available, we know this is an IM/SMS/Twitter session and not voice
     if v[:session][:initial_text]
-      # Add an 'ask' WebAPI method to the JSON response with appropriate options
-      t.ask :name => 'initial_text', :choices => { :value => "[ANY]"}
       # Set a session variable with the zip the user sent when they sent the IM/SMS/Twitter request
       session[:zip] = v[:session][:initial_text]
     else
       # If this is a voice session, then add a voice-oriented ask to the JSON response with the appropriate options
-      t.ask :name => 'zip', :bargein => true, :timeout => 60, :attempts => 2,
+      t.ask :name => 'zip', :bargein => true, :timeout => settings.tropo_tts["timeout_for_#{session[:channel]}"], :attempts => 3,
           :say => [{:event => "timeout", :value => say_str("Sorry, I did not hear anything.")},
-                   {:event => "nomatch:1 nomatch:2", :value => say_str("Oops, that wasn't a five-digit zip code.")},
+                   {:event => "nomatch:1 nomatch:2 nomatch:3", :value => say_str("Oops, that wasn't a five-digit zip code.")},
                    {:value => say_str("To search for eldercare resources in your area, please enter or say your 5 digit zip code.")}],
                     :choices => { :value => "[5 DIGITS]"}
     end
@@ -67,12 +68,19 @@ end
 post '/process_zip.json' do
   # Fetch the HTTP Body (the session) of the POST and parse it into a native Ruby Hash object
   v = Tropo::Generator.parse request.env["rack.input"].read
+  pp v
 
   # Create a Tropo::Generator object which is used to build the resulting JSON response
   t = Tropo::Generator.new
     t.voice = settings.tropo_tts["voice"]
+
     # If no intial text was captured, use the zip in response to the ask in the previous route
-    session[:zip] = v[:result][:actions][:zip][:value].gsub(" ","") unless session[:zip]
+    unless session[:zip]
+      if v[:result][:actions][:zip]
+        session[:zip] = v[:result][:actions][:zip][:value].gsub(" ","")
+      else
+      end
+    end
 
     # Fetch JSON output for the eldercare.gov API
     begin
@@ -91,9 +99,8 @@ post '/process_zip.json' do
       session[:data] = session[:data][0..8] if session[:data].size > 9 # limit to 9 results
       t.say say_str("Here are #{session[:data].size} resources in your area. Press the resource number you want more information about.")
       # Add an 'ask' to the JSON response and list the resources to the user in the form of a question. The selected opportunity will be handled in the next route.
-      t.ask :name => 'selection', :bargein => true, :timeout => 60, :attempts => 1,
+      t.ask :name => 'selection', :bargein => true, :timeout => settings.tropo_tts["timeout_for_#{session[:channel]}"], :attempts => 3,
           :say => [{:event => "nomatch:1", :value => say_str("That wasn't a one-digit resource number. Here are your choices: ")},
-                   # {:value => say_str(items_say.join(", "),"-10%")}], :choices => { :value => "[1 DIGITS]"}
                    {:value => say_str(construct_list_of_items,"-10%")}], :choices => { :value => "[1 DIGITS]"}
     else
       # Add a 'say' to the JSON response and hangip the call
@@ -117,6 +124,7 @@ post '/process_selection.json' do
       item = session[:data][v[:result][:actions][:selection][:value].to_i-1]
       session[:chosen_item_say_string_VOICE] = construct_details_of_item(item,"VOICE")
       session[:chosen_item_say_string_TEXT] = construct_details_of_item(item,"TEXT")
+
       if session[:channel] == "VOICE"
         t.say say_str(session[:chosen_item_say_string_VOICE], "-10%")
       else
@@ -124,8 +132,8 @@ post '/process_selection.json' do
       end
 
       # Ask the user if they would like an SMS sent to them
-      t.ask :name => 'send_sms', :bargein => true, :timeout => 60, :attempts => 1,
-            :say => [{:event => "nomatch:1", :value => say_str("That wasn't a valid answer.")},
+      t.ask :name => 'send_sms', :bargein => true, :timeout => settings.tropo_tts["timeout_for_#{session[:channel]}"], :attempts => 3,
+            :say => [{:event => "nomatch:1 nomatch:2 nomatch:3", :value => say_str("That wasn't a valid answer.")},
                    {:value => say_str("Would you like to have a text message sent to you with the resource information?
                                Press 1 or say 'yes' to get a text message; Press 2 or say 'no' to conclude this session.")}],
             :choices => { :value => "true(1,yes), false(2,no)"}
@@ -157,9 +165,9 @@ post '/send_text_message.json' do
       t.say say_str("Your text message is on its way.")
     else # We dont have a number, so either ask for it if they selected to send a text message, or send to goodbye.json
       if v[:result][:actions][:send_sms][:value] == "true"
-        t.ask :name => 'number_to_text', :bargein => true, :timeout => 60, :required => false, :attempts => 2,
+        t.ask :name => 'number_to_text', :bargein => true, :timeout => settings.tropo_tts["timeout_for_#{session[:channel]}"], :required => false, :attempts => 3,
               :say => [{:event => "timeout", :value => say_str("Sorry, I did not hear anything.")},
-                     {:event => "nomatch:1 nomatch:2", :value => say_str("Oops, that wasn't a 10-digit number.")},
+                     {:event => "nomatch:1 nomatch:2 nomatch:3", :value => say_str("Oops, that wasn't a 10-digit number.")},
                      {:value => say_str("What 10-digit phone number would you like to send the information to?")}],
                       :choices => { :value => "[10 DIGITS]"}
         next_url = '/send_text_message.json'

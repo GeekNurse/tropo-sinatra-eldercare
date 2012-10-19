@@ -15,7 +15,7 @@ def construct_list_of_items
       say_array << "##{i+1}: #{item[:tab_name]} @ #{item[:name]}"
     end
   end
-  session[:channel] == "VOICE" ? say_array.join(", <break />") : say_array.join(",")
+  session[:channel] == "VOICE" ? say_array.join(", <break />") : say_array.join(", ")
 end
 
 def construct_details_of_item(item,channel = session[:channel])
@@ -56,13 +56,7 @@ def construct_details_of_item(item,channel = session[:channel])
     details << "Google map available at #{google_maps_url}"
   end
 
-  # channel == "VOICE"
-  #   details = details.join(" , <break/> ")
-  # else
-  #   details = details.join(" | ")
-  # end
   channel == "VOICE" ? details.join(" <break/><break/> ") : details.join(" | ")
-  details
 end
 
 def shorten_url(long_url)

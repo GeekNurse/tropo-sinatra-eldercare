@@ -10,9 +10,9 @@ def construct_list_of_items
   say_array = []
   session[:data].each_with_index do |item,i|
     if session[:channel] == "VOICE"
-      say_array << "Resource ##{i+1}: #{item[:tab_name]} at #{item[:name]}"}
+      say_array << "Resource ##{i+1}: #{item[:tab_name]} at #{item[:name]}"
     else
-      say_array << "##{i+1}: #{item[:tab_name]} @ #{item[:name]}"}
+      say_array << "##{i+1}: #{item[:tab_name]} @ #{item[:name]}"
     end
   end
   session[:channel] == "VOICE" ? say_array.join(", <break />") : say_array.join(",")

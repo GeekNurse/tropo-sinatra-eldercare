@@ -1,8 +1,24 @@
 def say_str(string_to_say, rate = settings.tropo_tts["rate"])
-  "<speak><prosody rate='#{rate}'>#{string_to_say}</prosody></speak>"
+  if session[:channel] == "VOICE"
+    "<speak><prosody rate='#{rate}'>#{string_to_say}</prosody></speak>"
+  else
+    string_to_say
+  end
 end
 
-def construct_details_string(item,channel = "TEXT")
+def construct_list_of_items
+  say_array = []
+  session[:data].each_with_index do |item,i|
+    if session[:channel] == "VOICE"
+      say_array << "Resource ##{i+1}: #{item[:tab_name]} at #{item[:name]}"}
+    else
+      say_array << "##{i+1}: #{item[:tab_name]} @ #{item[:name]}"}
+    end
+  end
+  session[:channel] == "VOICE" ? say_array.join(", <break />") : say_array.join(",")
+end
+
+def construct_details_of_item(item,channel = session[:channel])
   details = []
 
   details << "This is detailed information about #{item[:tab_name]} at #{item[:tab_name]}: "

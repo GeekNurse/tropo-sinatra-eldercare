@@ -8,6 +8,12 @@ config_file 'config.yml'
 # Load some helper methods from helpers.rb
 require './helpers.rb'
 
+# set up Savon (SOAP client) configuration
+Savon.configure do |config|
+  config.log = false # disable logging
+end
+HTTPI.log = false # dont log HTTPI messages to console
+
 # To manage the web session coookies
 use Rack::Session::Pool
 
@@ -37,12 +43,10 @@ post '/index.json' do
     if v[:session][:initial_text]
       # Add an 'ask' WebAPI method to the JSON response with appropriate options
       t.ask :name => 'initial_text', :choices => { :value => "[ANY]"}
-      # Set a session variable with the zip the user sent when they sent the IM/SMS/Twitter
-      # Request
+      # Set a session variable with the zip the user sent when they sent the IM/SMS/Twitter request
       session[:zip] = v[:session][:initial_text]
     else
-      # If this is a voice session, then add a voice-oriented ask to the JSON response
-      # with the appropriate options
+      # If this is a voice session, then add a voice-oriented ask to the JSON response with the appropriate options
       t.ask :name => 'zip', :bargein => true, :timeout => 60, :attempts => 2,
           :say => [{:event => "timeout", :value => say_str("Sorry, I did not hear anything.")},
                    {:event => "nomatch:1 nomatch:2", :value => say_str("Oops, that wasn't a five-digit zip code.")},
@@ -79,29 +83,25 @@ post '/process_zip.json' do
       session[:data] = zip_response.body[:search_by_zip_response][:search_by_zip_result][:diffgram][:zip_code_data][:table1]
     rescue => e
       # Add a 'say' to the JSON response
-      t.say say_str("It looks like something went wrong with our eldercare dot gov data source. Please try again later.")
+      t.say say_str("It looks like something went awry with our data source. Please try again later.")
       t.hangup
     end
 
     if session[:data].size > 0
       session[:data] = session[:data][0..8] if session[:data].size > 9 # limit to 9 results
-      # List the resources to the user in the form of a question. The selected opportunity will be handled in the next route.
-      t.say say_str("Here are #{session[:data].size} resources. Press the resource number you want more information about.")
-      items_say = []
-      session[:data].each_with_index{|item,i| items_say << "Resource ##{i+1}: #{item[:tab_name]} at #{item[:name]}"}
-      # Add an 'ask' to the JSON response
+      t.say say_str("Here are #{session[:data].size} resources in your area. Press the resource number you want more information about.")
+      # Add an 'ask' to the JSON response and list the resources to the user in the form of a question. The selected opportunity will be handled in the next route.
       t.ask :name => 'selection', :bargein => true, :timeout => 60, :attempts => 1,
           :say => [{:event => "nomatch:1", :value => say_str("That wasn't a one-digit resource number. Here are your choices: ")},
-                   {:value => say_str(items_say.join(", <break/> "),"-10%")}], :choices => { :value => "[1 DIGITS]"}
+                   # {:value => say_str(items_say.join(", "),"-10%")}], :choices => { :value => "[1 DIGITS]"}
+                   {:value => say_str(construct_list_of_items,"-10%")}], :choices => { :value => "[1 DIGITS]"}
     else
       # Add a 'say' to the JSON response and hangip the call
       t.say say_str("Sorry, but we did not find any eldercare resources found in that zip code.")
       t.hangup
     end
 
-    # Add an 'on' to the JSON reponse and set which resource to go to when the 'ask' is done executing
     t.on  :event => 'continue', :next => '/process_selection.json'
-    # Add a 'hangup' to the JSON reponse and set which resource to go to if a Hangup event occurs on Tropo
     t.on  :event => 'hangup', :next => '/hangup.json'
 
   t.response
@@ -115,12 +115,12 @@ post '/process_selection.json' do
     # If we have a valid response from the last ask, do this section
     if v[:result][:actions][:selection][:value]
       item = session[:data][v[:result][:actions][:selection][:value].to_i-1]
-      session[:say_string_VOICE] = construct_details_string(item,"VOICE")
-      session[:say_string_TEXT] = construct_details_string(item,"TEXT")
+      session[:chosen_item_say_string_VOICE] = construct_details_of_item(item,"VOICE")
+      session[:chosen_item_say_string_TEXT] = construct_details_of_item(item,"TEXT")
       if session[:channel] == "VOICE"
-        t.say say_str(session[:say_string_VOICE], "-10%")
+        t.say say_str(session[:chosen_item_say_string_VOICE], "-10%")
       else
-        t.say session[:say_string_TEXT]
+        t.say session[:chosen_item_say_string_TEXT]
       end
 
       # Ask the user if they would like an SMS sent to them

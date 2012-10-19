@@ -33,15 +33,14 @@ post '/index.json' do
   # Create a Tropo::Generator object which is used to build the resulting JSON response
   t = Tropo::Generator.new
     t.voice = settings.tropo_tts["voice"]
-    # If there is Initial Text available, we know this is an IM/SMS/Twitter session and
-    # not voice
-    if v[:session][:initial_text]
+    # If there is Initial Text available, we know this is an IM/SMS/Twitter session and not voice
+    # if v[:session][:initial_text]
       # Add an 'ask' WebAPI method to the JSON response with appropriate options
-      t.ask :name => 'initial_text', :choices => { :value => "[ANY]"}
+      # t.ask :name => 'initial_text', :choices => { :value => "[ANY]"}
       # Set a session variable with the zip the user sent when they sent the IM/SMS/Twitter
       # Request
-      session[:zip] = v[:session][:initial_text]
-    else
+      # session[:zip] = v[:session][:initial_text]
+    # else
       # If this is a voice session, then add a voice-oriented ask to the JSON response
       # with the appropriate options
       t.ask :name => 'zip', :bargein => true, :timeout => 60, :attempts => 2,
@@ -49,7 +48,7 @@ post '/index.json' do
                    {:event => "nomatch:1 nomatch:2", :value => say_str("Oops, that wasn't a five-digit zip code.")},
                    {:value => say_str("To search for eldercare resources in your area, please enter or say your 5 digit zip code.")}],
                     :choices => { :value => "[5 DIGITS]"}
-    end
+    # end
 
     # Add a 'hangup' to the JSON response and set which resource to go to if a Hangup event occurs on Tropo
     t.on :event => 'hangup', :next => '/hangup.json'

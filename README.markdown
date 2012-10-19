@@ -46,7 +46,6 @@ Steps to recreate
     * `git clone http://github.com/marks/tropo-sinatra-eldercare.git --depth 1`
     * `cd tropo-sinatra-eldercare`
 
-
 3. Edit the `config.yml.exmaple` to use your own API username and password and rename the file to `config.yml`
 
 4. Back at the command line, issue:

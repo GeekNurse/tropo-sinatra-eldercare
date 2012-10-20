@@ -3,10 +3,9 @@ require 'bundler'
 require 'open-uri'
 Bundler.require
 
-require 'pp'
-
 # Load configuration file with Sintra::Contrib helper (http://www.sinatrarb.com/contrib/)
 config_file 'config.yml'
+
 # Load some helper methods from helpers.rb
 require './helpers.rb'
 
@@ -19,6 +18,12 @@ HTTPI.log = false # dont log HTTPI messages to console
 # To manage the web session coookies
 use Rack::Session::Pool
 
+# Setup Gabba, a server-side Google Analytics gem
+G = Gabba::Gabba.new(settings.google_analytics["tracking_id"], settings.google_analytics["domain"]) if defined?(settings.google_analytics)
+before do
+  G.page_view(request.path.to_s,request.path.to_s) if defined?(G)
+end
+
 # Resource called by the Tropo WebAPI URL setting
 post '/index.json' do
   # Fetches the HTTP Body (the session) of the POST and parse it into a native Ruby Hash object
@@ -30,6 +35,11 @@ post '/index.json' do
   session[:from] = v[:session][:from]
   session[:network] = v[:session][:to][:network].upcase
   session[:channel] = v[:session][:to][:channel].upcase
+  G.set_custom_var(1, 'caller', session[:from].values.join("|").to_s, Gabba::Gabba::VISITOR)
+  G.set_custom_var(2, 'called', session[:to].values.join("|").to_s, Gabba::Gabba::VISITOR)
+  G.set_custom_var(3, 'session_id', v[:session][:session_id], Gabba::Gabba::VISITOR)
+  G.set_custom_var(4, 'network', session[:network].to_s, Gabba::Gabba::VISITOR)
+  G.set_custom_var(5, 'channel', session[:channel].to_s, Gabba::Gabba::VISITOR)
 
   # Set up connections to eldercare.gov API
   session[:client] = Savon.client(settings.eldercare_gov_api["wsdl_url"])
@@ -41,8 +51,8 @@ post '/index.json' do
   # Create a Tropo::Generator object which is used to build the resulting JSON response
   t = Tropo::Generator.new
     t.voice = settings.tropo_tts["voice"]
-    pp v
-    # # If there is Initial Text available, we know this is an IM/SMS/Twitter session and not voice
+
+    # If there is Initial Text available, we know this is an IM/SMS/Twitter session and not voice
     if v[:session][:initial_text]
       # Set a session variable with the zip the user sent when they sent the IM/SMS/Twitter request
       session[:zip] = v[:session][:initial_text]
@@ -74,8 +84,6 @@ post '/process_zip.json' do
   # Create a Tropo::Generator object which is used to build the resulting JSON response
   t = Tropo::Generator.new
     t.voice = settings.tropo_tts["voice"]
-    pp session
-    pp v[:result]
     # If no intial text was captured, use the zip in response to the ask in the previous route
     unless session[:zip]
       if v[:result][:actions][:zip]
@@ -85,12 +93,13 @@ post '/process_zip.json' do
     end
 
     # Fetch JSON output for the eldercare.gov API
-    begin
+    # begin
       # Get data from the eldercare.gov API
       zip_response = session[:client].request :search_by_zip do
         soap.body = { asZipCode: session[:zip], asToken: session[:client_token] }
       end
       session[:data] = zip_response.body[:search_by_zip_response][:search_by_zip_result][:diffgram][:zip_code_data][:table1]
+      G.event("Location", "LookupByZip", session[:zip].to_s) if defined?(G)
 
       if session[:data].size > 0
         session[:data] = session[:data][0..8] if session[:data].size > 9 # limit to 9 results
@@ -105,11 +114,11 @@ post '/process_zip.json' do
         t.say say_str("Sorry, but we did not find any eldercare resources found in that zip code.")
         t.hangup
       end
-    rescue => e
-      # Add a 'say' to the JSON response
-      t.say say_str("It looks like something went awry with our data source. Please try again later.")
-      t.hangup
-    end
+    # rescue => e
+    #   # Add a 'say' to the JSON response
+    #   t.say say_str("It looks like something went awry with our data source. Please try again later.")
+    #   t.hangup
+    # end
 
 
     t.on  :event => 'continue', :next => '/process_selection.json'
@@ -125,6 +134,8 @@ post '/process_selection.json' do
     t.voice = settings.tropo_tts["voice"]
     # If we have a valid response from the last ask, do this section
     if v[:result][:actions][:selection][:value]
+      G.event("EldercareLocation", "ItemDetails", "ItemNumber", v[:result][:actions][:selection][:value].to_s, true) if defined?(G)
+
       item = session[:data][v[:result][:actions][:selection][:value].to_i-1]
       session[:chosen_item_say_string_VOICE] = construct_details_of_item(item,"VOICE")
       session[:chosen_item_say_string_TEXT] = construct_details_of_item(item,"TEXT")
@@ -140,8 +151,7 @@ post '/process_selection.json' do
         t.ask :name => 'send_sms', :bargein => true, :timeout => settings.tropo_tts["timeout_for_#{session[:channel]}"], :interdigitTimeout => settings.tropo_tts["interdigitTimeout_for_#{session[:channel]}"],
               :attempts => 3,
               :say => [{:event => "nomatch:1 nomatch:2 nomatch:3", :value => say_str("That wasn't a valid answer.")},
-                     {:value => say_str("Would you like to have a text message sent to you with this information?
-                                 Press 1 or say 'yes' to receive a text message; press 2 or say 'no' to conclude this session.")}],
+                     {:value => say_str("Would you like to have a text message sent to you with this information? Press 1 or say 'yes' to receive a text message; press 2 or say 'no' to conclude this session.")}],
               :choices => { :value => "true(1,yes), false(2,no)"}
         next_url = '/send_text_message.json'
       end
@@ -215,5 +225,6 @@ end
 # The next step in the session is posted to this resource when any of the resources do a hangup
 post '/hangup.json' do
   v = Tropo::Generator.parse request.env["rack.input"].read
+  G.event("EldercareLocation", "Hangup", "Duration", v[:result][:session_duration].to_s) if defined?(G)
   puts " Call complete (CDR received). Call duration: #{v[:result][:session_duration]} second(s)"
 end

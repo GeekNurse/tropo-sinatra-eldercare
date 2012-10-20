@@ -2,6 +2,7 @@ def say_str(string_to_say, rate = settings.tropo_tts["rate"])
   if session[:channel] == "VOICE"
     "<speak><prosody rate='#{rate}'>#{string_to_say}</prosody></speak>"
   else
+    string_to_say = string_to_say.gsub("Press","Text").gsub("press","text")
     string_to_say
   end
 end

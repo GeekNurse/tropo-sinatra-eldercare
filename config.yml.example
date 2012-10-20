@@ -9,3 +9,6 @@ tropo_tts:
   timeout_for_TEXT: 180
   interdigitTimeout_for_VOICE: 10
   interdigitTimeout_for_TEXT: 180
+google_analytics:
+  tracking_id: "UA-XXXXXXXXX-X"
+  domain: "domain.com"

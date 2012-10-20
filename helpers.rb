@@ -22,16 +22,8 @@ def construct_details_of_item(item,channel = session[:channel])
   details = []
 
   details << "This is detailed information about #{item[:tab_name]} at #{item[:tab_name]}: "
-  if item[:url]
-    tinyurl = shorten_url(URI.unescape(item[:url]))
-    if channel == "VOICE"
-      details << "Official web page: #{readable_tinyurl(tinyurl)}"
-    else
-      details << "Official web page: #{tinyurl}"
-    end
-  end
-  details << "Phone number for information: <say-as interpret-as='vxml:phone'>#{item[:info_phone]}</say-as>" unless item[:info_phone].nil?
-  details << "TTY Phone number: <say-as interpret-as='vxml:phone'>#{item[:tty_phone]}</say-as>" unless item[:tty_phone].nil?
+  details << "Phone number for information: #{"<say-as interpret-as='vxml:phone'>" if session[:channel] == "VOICE"}#{item[:info_phone]}#{"</say-as>" if session[:channel] == "VOICE"}" unless item[:info_phone].nil?
+  details << "TTY Phone number: #{"<say-as interpret-as='vxml:phone'>" if session[:channel] == "VOICE"}#{item[:tty_phone]}#{"</say-as>" if session[:channel] == "VOICE"}" unless item[:tty_phone].nil?
   # details << "Email address: #{item[:e_mail_add]}" unless item[:e_mail_add].nil?
 
   full_address = []
@@ -46,6 +38,15 @@ def construct_details_of_item(item,channel = session[:channel])
     full_address << item[:zip_code] unless item[:zip_code].nil?
   end
   full_address_str = full_address.join(" ,")
+
+  if item[:url]
+    tinyurl = shorten_url(URI.unescape(item[:url]))
+    if channel == "VOICE"
+      details << "Official web page: #{readable_tinyurl(tinyurl)}"
+    else
+      details << "Official web page: #{tinyurl}"
+    end
+  end
 
   google_maps_url = shorten_url("http://maps.google.com/maps?f=q&source=s_q&hl=en&geocode=&q="+URI.escape(full_address_str))
   if channel == "VOICE"

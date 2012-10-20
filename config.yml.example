@@ -3,5 +3,9 @@ eldercare_gov_api:
   username: "YOUR_USERNAME"
   password: "YOUR_PASSWORD"
 tropo_tts:
-  voice: "kate"
+  voice: "allison"
   rate: "default"
+  timeout_for_VOICE: 45
+  timeout_for_TEXT: 180
+  interdigitTimeout_for_VOICE: 10
+  interdigitTimeout_for_TEXT: 180

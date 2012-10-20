@@ -139,8 +139,8 @@ post '/process_selection.json' do
         t.ask :name => 'send_sms', :bargein => true, :timeout => settings.tropo_tts["timeout_for_#{session[:channel]}"], :interdigitTimeout => settings.tropo_tts["interdigitTimeout_for_#{session[:channel]}"],
               :attempts => 3,
               :say => [{:event => "nomatch:1 nomatch:2 nomatch:3", :value => say_str("That wasn't a valid answer.")},
-                     {:value => say_str("Would you like to have a text message sent to you with the resource information?
-                                 Press 1 or say 'yes' to get a text message; Press 2 or say 'no' to conclude this session.")}],
+                     {:value => say_str("Would you like to have a text message sent to you with this information?
+                                 Press 1 or say 'yes' to receive a text message; press 2 or say 'no' to conclude this session.")}],
               :choices => { :value => "true(1,yes), false(2,no)"}
         next_url = '/send_text_message.json'
       end

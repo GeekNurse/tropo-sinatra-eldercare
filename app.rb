@@ -46,6 +46,7 @@ post '/index.json' do
     if v[:session][:initial_text]
       # Set a session variable with the zip the user sent when they sent the IM/SMS/Twitter request
       session[:zip] = v[:session][:initial_text]
+      t.ask :name => '0', :say => {:value => ""}, :choices => {:value => "[ANY]"}
     else
       # If this is a voice session, then add a voice-oriented ask to the JSON response with the appropriate options
       t.ask :name => 'zip', :bargein => true, :timeout => settings.tropo_tts["timeout_for_#{session[:channel]}"], :interdigitTimeout => settings.tropo_tts["interdigitTimeout_for_#{session[:channel]}"],

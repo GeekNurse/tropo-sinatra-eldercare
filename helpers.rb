@@ -37,7 +37,7 @@ def construct_details_of_item(item,channel = session[:channel])
   else
     full_address << item[:zip_code] unless item[:zip_code].nil?
   end
-  full_address_str = full_address.join(" ,")
+  full_address_str = full_address.join(", ")
 
   if item[:url]
     tinyurl = shorten_url(URI.unescape(item[:url]))

@@ -19,11 +19,10 @@ HTTPI.log = false # dont log HTTPI messages to console
 use Rack::Session::Pool
 
 # Setup Gabba, a server-side Google Analytics gem
-G = Gabba::Gabba.new(settings.google_analytics["tracking_id"], settings.google_analytics["domain"])
-if defined?(settings.google_analytics)
-  before do
-    G.page_view(request.path.to_s,request.path.to_s) if defined?(G)
-  end
+G = Gabba::Gabba.new(settings.google_analytics["tracking_id"], settings.google_analytics["domain"]) if defined?(settings.google_analytics)
+
+before do
+  G.page_view(request.path.to_s,request.path.to_s) if defined?(G)
 end
 
 # Resource called by the Tropo WebAPI URL setting

@@ -19,9 +19,11 @@ HTTPI.log = false # dont log HTTPI messages to console
 use Rack::Session::Pool
 
 # Setup Gabba, a server-side Google Analytics gem
-G = Gabba::Gabba.new(settings.google_analytics["tracking_id"], settings.google_analytics["domain"]) if defined?(settings.google_analytics)
-before do
-  G.page_view(request.path.to_s,request.path.to_s) if defined?(G)
+G = Gabba::Gabba.new(settings.google_analytics["tracking_id"], settings.google_analytics["domain"])
+if defined?(settings.google_analytics)
+  before do
+    G.page_view(request.path.to_s,request.path.to_s) if defined?(G)
+  end
 end
 
 # Resource called by the Tropo WebAPI URL setting
@@ -32,14 +34,15 @@ post '/index.json' do
   # Fetching certain variables from the resulting Ruby Hash of the session details
   # into Sinatra/HTTP sessions; this can then be used in the subsequent calls to the
   # Sinatra application
-  session[:from] = v[:session][:from]
   session[:network] = v[:session][:to][:network].upcase
   session[:channel] = v[:session][:to][:channel].upcase
-  G.set_custom_var(1, 'caller', session[:from].values.join("|").to_s, Gabba::Gabba::VISITOR)
-  G.set_custom_var(2, 'called', session[:to].values.join("|").to_s, Gabba::Gabba::VISITOR)
-  G.set_custom_var(3, 'session_id', v[:session][:session_id], Gabba::Gabba::VISITOR)
-  G.set_custom_var(4, 'network', session[:network].to_s, Gabba::Gabba::VISITOR)
-  G.set_custom_var(5, 'channel', session[:channel].to_s, Gabba::Gabba::VISITOR)
+  if defined?(G)
+    G.set_custom_var(1, 'caller', v[:session][:from].values.join("|").to_s, Gabba::Gabba::VISITOR)
+    G.set_custom_var(2, 'called', v[:session][:to].values.join("|").to_s, Gabba::Gabba::VISITOR)
+    G.set_custom_var(3, 'session_id', v[:session][:session_id], Gabba::Gabba::VISITOR)
+    G.set_custom_var(4, 'network', session[:network].to_s, Gabba::Gabba::VISITOR)
+    G.set_custom_var(5, 'channel', session[:channel].to_s, Gabba::Gabba::VISITOR)
+  end
 
   # Set up connections to eldercare.gov API
   session[:client] = Savon.client(settings.eldercare_gov_api["wsdl_url"])
